@@ -1,1 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Organizer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --surface: #111114;
+  --card: #16161a;
+  --border: #242428;
+  --border2: #2e2e34;
+  --accent: #b8ff57;
+  --accent2: #6c5ce7;
+  --text: #e4e4ec;
+  --muted: #5a5a68;
+  --danger: #ff4d6d;
+  --success: #00e5a0;
+  --warn: #ffb830;
+  --mono: 'DM Mono', monospace;
+  --display: 'Unbounded', sans-serif;
+}
 
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* grain overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 999;
+}
+
+.wrap { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+
+/* header */
+header { margin-bottom: 44px; }
+.logo {
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1;
+  display: flex; align-items: baseline; gap: 10px;
+}
+.logo-dot { color: var(--accent); }
+.tagline { color: var(--muted); margin-top: 10px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+
+/* step bar */
+.stepbar {
+  display: flex; gap: 0; margin-bottom: 36px;
+  border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.step {
+  flex: 1; padding: 10px 4px; text-align: center;
+  font-size: 11px; color: var(--muted); letter-spacing: .04em;
+  border-right: 1px solid var(--border); transition: all .2s;
+  text-transform: uppercase;
+}
+.step:last-child { border-right: none; }
+.step.active { background: var(--accent); color: #000; font-weight: 500; }
+.step.done   { color: var(--success); }
+
+/* card */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px;
+  margin-bottom: 18px;
+}
+.card-head {
+  font-family: var(--display); font-size: .9rem; font-weight: 700;
+  letter-spacing: -0.5px; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.pill {
+  font-family: var(--mono); font-size: 10px; font-weight: 400;
+  padding: 2px 10px; border-radius: 999px;
+  background: var(--border2); color: var(--muted);
+}
+
+/* inputs */
+.field { margin-bottom: 14px; }
+.field label { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+.field input {
+  width: 100%; padding: 11px 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 13px;
+  outline: none; transition: border-color .2s;
+}
+.field input:focus { border-color: var(--accent2); }
+
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+.switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background: var(--border2); border-radius: 22px; transition: .2s; }
+.slider:before {
+  content: ''; position: absolute;
+  width: 16px; height: 16px; left: 3px; bottom: 3px;
+  background: var(--muted); border-radius: 50%; transition: .2s;
+}
+input:checked + .slider { background: var(--accent); }
+input:checked + .slider:before { transform: translateX(16px); background: #000; }
+
+/* buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 22px; border-radius: 8px; border: none;
+  cursor: pointer; font-family: var(--mono); font-size: 13px;
+  font-weight: 500; transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border2); }
+.btn-secondary:hover { border-color: var(--muted); }
+.btn-go { background: var(--accent2); color: #fff; }
+.btn-go:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.btn-danger:hover { background: rgba(255,77,109,.08); }
+.btn:disabled { opacity: .35; cursor: not-allowed; transform: none !important; filter: none !important; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+
+/* table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; padding: 8px 12px;
+  color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+  border-bottom: 1px solid var(--border);
+}
+td { padding: 10px 12px; border-bottom: 1px solid #1a1a1e; font-size: 12px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.015); }
+td input {
+  width: 100%; background: transparent; border: none;
+  color: var(--text); font-family: var(--mono); font-size: 12px;
+  border-bottom: 1px dashed var(--border2); outline: none; padding: 2px 0;
+}
+td input:focus { border-bottom-color: var(--accent2); }
+
+.tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; }
+.tag-ok  { background: rgba(0,229,160,.1); color: var(--success); }
+.tag-mb  { background: rgba(108,92,231,.15); color: #a89ef5; }
+.tag-warn { background: rgba(255,184,48,.1); color: var(--warn); }
+
+.mb-btn {
+  font-size: 10px; padding: 3px 10px; border-radius: 999px;
+  background: rgba(108,92,231,.12); border: 1px solid var(--accent2);
+  color: #a89ef5; cursor: pointer; font-family: var(--mono);
+  transition: all .15s;
+}
+.mb-btn:hover { background: rgba(108,92,231,.25); }
+.mb-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+/* progress */
+.prog-wrap { background: var(--border); border-radius: 999px; height: 4px; overflow: hidden; margin: 14px 0; }
+.prog-bar { height: 100%; background: var(--accent); border-radius: 999px; transition: width .25s; width: 0%; }
+
+/* log */
+.log {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; max-height: 200px; overflow-y: auto;
+  font-size: 11px; line-height: 1.9;
+}
+.log .ok   { color: var(--success); }
+.log .err  { color: var(--danger); }
+.log .info { color: var(--muted); }
+.log .warn { color: var(--warn); }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 20px; }
+.stat-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 18px; text-align: center;
+}
+.stat-num { font-family: var(--display); font-size: 2rem; font-weight: 900; letter-spacing: -2px; }
+.stat-lbl { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; margin-top: 4px; }
+
+/* hidden */
+.hidden { display: none !important; }
+
+/* format badges */
+.fmt { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; background: var(--border2); color: var(--muted); margin-left: 4px; }
+.fmt.mp3  { background: rgba(184,255,87,.1);  color: var(--accent); }
+.fmt.flac { background: rgba(108,92,231,.15); color: #a89ef5; }
+.fmt.wav  { background: rgba(0,229,160,.08);  color: var(--success); }
+.fmt.m4a  { background: rgba(255,184,48,.1);  color: var(--warn); }
+
+/* count badge */
+#file-count-badge { font-family: var(--mono); }
+
+/* preview list */
+.prev-list { max-height: 260px; overflow-y: auto; }
+.prev-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+.prev-item:last-child { border-bottom: none; }
+.prev-src  { color: var(--muted); }
+.prev-dest { color: var(--accent); margin-top: 2px; }
+.arrow-lbl { color: var(--border2); margin: 0 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">music<span class="logo-dot">.</span>org</div>
+    <p class="tagline">MP3 · FLAC · WAV · M4A → Artist / Album / Song</p>
+  </header>
+
+  <div class="stepbar">
+    <div class="step active" id="s1">01 · Scan</div>
+    <div class="step" id="s2">02 · Review</div>
+    <div class="step" id="s3">03 · Preview</div>
+    <div class="step" id="s4">04 · Organize</div>
+  </div>
+
+  <!-- Step 1: Scan -->
+  <div id="step1">
+    <div class="card">
+      <div class="card-head">Scan folder <span class="pill">step 1</span></div>
+      <div class="field">
+        <label>Source folder path</label>
+        <input type="text" id="src-folder" placeholder="/Users/you/Music/Unsorted">
+      </div>
+      <div class="field">
+        <label>Output folder path</label>
+        <input type="text" id="out-folder" placeholder="/Users/you/Music/Organized">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="doScan()">Scan →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Review table -->
+  <div id="step2" class="hidden">
+    <div class="card">
+      <div class="card-head">
+        Review &amp; edit metadata
+        <span class="pill" id="file-count-badge">0 files</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Artist</th>
+              <th>Album</th>
+              <th>Title</th>
+              <th>Tags</th>
+              <th>Enrich</th>
+            </tr>
+          </thead>
+          <tbody id="file-tbody"></tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="doPreview()">Preview paths →</button>
+        <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Preview -->
+  <div id="step3" class="hidden">
+    <div class="card">
+      <div class="card-head">Path preview <span class="pill">before move</span></div>
+      <div class="prev-list" id="prev-list"></div>
+      <div class="btn-row">
+        <button class="btn btn-go" onclick="goStep(4)">Organize →</button>
+        <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">Options</div>
+      <div class="toggle-row">
+        <div class="toggle-label">
+          Download album artwork
+          <small>Saves cover.jpg per album folder via Cover Art Archive</small>
+        </div>
+        <label class="switch"><input type="checkbox" id="opt-artwork" checked><span class="slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: Organize -->
+  <div id="step4" class="hidden">
+    <div class="card">
+      <div class="card-head">Organizing files…</div>
+      <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+      <div class="log" id="log"></div>
+      <div class="stats hidden" id="stats">
+        <div class="stat-box">
+          <div class="stat-num" id="stat-moved">0</div>
+          <div class="stat-lbl">Moved</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-errors">0</div>
+          <div class="stat-lbl">Errors</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-total">0</div>
+          <div class="stat-lbl">Total</div>
+        </div>
+      </div>
+      <div class="btn-row hidden" id="done-row">
+        <button class="btn btn-primary" onclick="location.reload()">Start over</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let FILES = [];
+
+/* ── helpers ── */
+const $ = id => document.getElementById(id);
+const log = (msg, cls='info') => {
+  const d = $('log');
+  d.innerHTML += `<div class="${cls}">${msg}</div>`;
+  d.scrollTop = d.scrollHeight;
+};
+
+function goStep(n) {
+  [1,2,3,4].forEach(i => {
+    $(`step${i}`).classList.toggle('hidden', i !== n);
+    $(`s${i}`).className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+}
+
+function fmtBadge(ext) {
+  const e = ext.replace('.','');
+  return `<span class="fmt ${e}">${e.toUpperCase()}</span>`;
+}
+
+/* ── step 1: scan ── */
+async function doScan() {
+  const src = $('src-folder').value.trim();
+  const out = $('out-folder').value.trim();
+  if (!src || !out) { alert('Both folder paths are required.'); return; }
+
+  const btn = document.querySelector('#step1 .btn-primary');
+  btn.disabled = true; btn.textContent = 'Scanning…';
+
+  try {
+    const res = await fetch('/api/scan', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({folder: src}),
+    });
+    const data = await res.json();
+    if (data.error) { alert(data.error); return; }
+
+    FILES = data.files;
+    renderTable(FILES);
+    $('file-count-badge').textContent = `${data.count} files`;
+    goStep(2);
+  } catch(e) {
+    alert('Scan failed: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Scan →';
+  }
+}
+
+/* ── step 2: table ── */
+function renderTable(files) {
+  const tbody = $('file-tbody');
+  tbody.innerHTML = '';
+  files.forEach((f, i) => {
+    const artTag = f.has_artwork
+      ? '<span class="tag tag-ok">art</span>'
+      : '<span class="tag tag-warn">no art</span>';
+    tbody.innerHTML += `
+      <tr>
+        <td>${f.filename}${fmtBadge(f.ext)}</td>
+        <td><input id="a-${i}" value="${esc(f.artist)}" oninput="FILES[${i}].artist=this.value"></td>
+        <td><input id="b-${i}" value="${esc(f.album)}"  oninput="FILES[${i}].album=this.value"></td>
+        <td><input id="t-${i}" value="${esc(f.title)}"  oninput="FILES[${i}].title=this.value"></td>
+        <td>${artTag} ${f.mb_fetched ? '<span class="tag tag-mb">mb</span>' : ''}</td>
+        <td><button class="mb-btn" onclick="enrich(${i})">MusicBrainz</button></td>
+      </tr>`;
+  });
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function enrich(i) {
+  const btn = document.querySelectorAll('.mb-btn')[i];
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res = await fetch('/api/enrich', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({artist: FILES[i].artist, title: FILES[i].title}),
+    });
+    const data = await res.json();
+    if (data.artist) { FILES[i].artist = data.artist; $(`a-${i}`).value = data.artist; }
+    if (data.album)  { FILES[i].album  = data.album;  $(`b-${i}`).value = data.album; }
+    if (data.title)  { FILES[i].title  = data.title;  $(`t-${i}`).value = data.title; }
+    FILES[i].mb_fetched = true;
+    btn.textContent = '✓ done';
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'retry';
+  }
+}
+
+/* ── step 3: preview ── */
+async function doPreview() {
+  const out = $('out-folder').value.trim();
+  const res = await fetch('/api/preview', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({files: FILES, output_root: out}),
+  });
+  const data = await res.json();
+  if (data.error) { alert(data.error); return; }
+
+  const list = $('prev-list');
+  list.innerHTML = data.previews.map(p => `
+    <div class="prev-item">
+      <div class="prev-src">${p.src}</div>
+      <div class="prev-dest">↳ ${p.dest}</div>
+    </div>`).join('');
+  goStep(3);
+}
+
+/* ── step 4: organize ── */
+async function doOrganize() {
+  goStep(4);
+  const out      = $('out-folder').value.trim();
+  const artwork  = $('opt-artwork').checked;
+  const bar      = $('prog-bar');
+  const total    = FILES.length;
+
+  log(`Starting — ${total} files → ${out}`, 'info');
+  bar.style.width = '10%';
+
+  try {
+    const res = await fetch('/api/organize', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({files: FILES, output_root: out, fetch_artwork: artwork}),
+    });
+    const data = await res.json();
+
+    bar.style.width = '100%';
+
+    data.details.forEach(d => {
+      const name = d.dest.split(/[/\\]/).pop();
+      log(`✓ ${name}`, 'ok');
+    });
+    data.errors.forEach(e => log(`✗ ${e.file} — ${e.error}`, 'err'));
+
+    $('stat-moved').textContent  = data.moved;
+    $('stat-errors').textContent = data.errors.length;
+    $('stat-total').textContent  = total;
+
+    $('stats').classList.remove('hidden');
+    $('done-row').classList.remove('hidden');
+
+    if (data.errors.length === 0) {
+      log(`Done! ${data.moved} files organized.`, 'ok');
+    } else {
+      log(`Done with ${data.errors.length} error(s).`, 'warn');
+    }
+  } catch(e) {
+    log('Fatal error: ' + e.message, 'err');
+  }
+}
+
+/* auto-trigger organize when entering step 4 */
+const _goStep = goStep;
+function goStep(n) {
+  _goStep(n);
+  if (n === 4) doOrganize();
+}
+</script>
+</body>
+</html>
