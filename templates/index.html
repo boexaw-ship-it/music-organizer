@@ -488,11 +488,11 @@ async function doOrganize() {
 }
 
 /* auto-trigger organize when entering step 4 */
-const _goStep = goStep;
-function goStep(n) {
-  _goStep(n);
+const _goStepInner = goStep;
+goStep = function(n) {
+  _goStepInner(n);
   if (n === 4) doOrganize();
-}
+};
 </script>
 </body>
 </html>
